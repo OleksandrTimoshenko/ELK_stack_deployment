@@ -1,0 +1,5 @@
+*.log
+*.pem
+.vagrant
+other
+creds.txt
