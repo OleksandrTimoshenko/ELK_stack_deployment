@@ -1,0 +1,71 @@
+- name: server
+  hosts: all
+  become: True
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    project_name: "ELK"
+
+  environment:
+    env: "{{ env_setup }}"
+
+  pre_tasks:
+    - name: Wait for system to become reachable
+      wait_for_connection:
+
+  tasks:
+    - name: Debug
+      ansible.builtin.debug:
+        msg: 
+          - "{{ environment }}"
+
+    - name: Creating apt file for set elasticsearch version
+      file:
+        state: touch
+        path: /etc/apt/sources.list.d/elastic-7.x.list
+
+    - name: Add an Apt signing key, uses whichever key is at the URL
+      ansible.builtin.apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+
+    - name: Set elasticsearch version 7 to apt repository list
+      lineinfile:
+        path: /etc/apt/sources.list.d/elastic-7.x.list
+        line: "deb https://artifacts.elastic.co/packages/7.x/apt stable main"
+
+    - name: apt upgrade 
+      apt:
+        upgrade: "yes"
+        update_cache: yes
+        cache_valid_time: 86400 #One day
+
+    - name: Install APT packeges
+      apt:
+        name: 
+          - default-jre
+          - default-jdk
+          - elasticsearch
+          - kibana
+          - logstash
+        state: present
+        update_cache: yes
+
+    - name: Set default host for elasticsearch
+      lineinfile:
+        path: /etc/elasticsearch/elasticsearch.yml
+        line: "network.host: localhost"
+
+    - name: Copy config file for logstash
+      copy:
+        src: ./logstash.conf
+        dest: /etc/logstash/conf.d/logstash.conf
+
+    - name: Start services, if not started
+      systemd:
+        name: "{{ item }}"
+        state: started
+      with_items:
+        - elasticsearch
+        - logstash
+        - kibana
