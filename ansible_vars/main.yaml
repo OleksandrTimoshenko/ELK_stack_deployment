@@ -1,0 +1,13 @@
+ansible_python_interpreter: /usr/bin/python3
+project_name: "ELK"
+env: "{{ env_setup }}"
+domain: "{{ domain_name }}"
+email:  "{{ email }}"
+awscli_users:
+  - username: "{{ server_user }}"
+    state: present
+    awscli: 
+        aws_region: us-east-1
+        aws_output_format: json
+        aws_access_key_id: "{{ aws_access_key }}"
+        aws_secret_access_key: "{{ aws_secret_access_key }}"
