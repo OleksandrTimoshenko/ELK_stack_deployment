@@ -5,8 +5,6 @@
   vars:
     ansible_python_interpreter: /usr/bin/python3
     project_name: "ELK"
-
-  environment:
     env: "{{ env_setup }}"
 
   pre_tasks:
@@ -17,7 +15,7 @@
     - name: Debug
       ansible.builtin.debug:
         msg: 
-          - "{{ environment }}"
+          - "{{ env }}"
 
     - name: Creating apt file for set elasticsearch version
       file:
@@ -45,6 +43,7 @@
         name: 
           - default-jre
           - default-jdk
+          - nginx
           - elasticsearch
           - kibana
           - logstash
@@ -61,11 +60,33 @@
         src: ./logstash.conf
         dest: /etc/logstash/conf.d/logstash.conf
 
+#TODO: add AWS and Certbot setup for production
+
+    - name: Copy htpasswd file
+      copy:
+        src: ./nginx/htpasswd.users
+        dest: /etc/nginx/htpasswd.users
+      when: env != "vagrant"
+
+    - name: Copy docker config for vagrant machine
+      copy:
+        src: ./nginx/local.conf
+        dest: /etc/nginx/conf.d/
+      when: env == "vagrant"
+
+    - name: Copy nginx config for deployment with domain
+      copy:
+        src: ./nginx/elk.feature-testing.link.conf
+        dest: /etc/nginx/conf.d/
+      when: env != "vagrant"
+
     - name: Start services, if not started
       systemd:
         name: "{{ item }}"
-        state: started
+        state: restarted
+        enabled: yes
       with_items:
         - elasticsearch
         - logstash
         - kibana
+        - nginx
