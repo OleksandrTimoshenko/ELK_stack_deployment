@@ -3,3 +3,4 @@
 .vagrant
 other
 creds.txt
+/nginx/htpasswd.users
