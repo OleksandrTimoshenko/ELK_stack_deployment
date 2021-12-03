@@ -2,10 +2,8 @@
   hosts: all
   become: True
   gather_facts: no
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
-    project_name: "ELK"
-    env: "{{ env_setup }}"
+  vars_files:
+    - ansible_vars/main.yaml
 
   pre_tasks:
     - name: Wait for system to become reachable
@@ -47,8 +45,18 @@
           - elasticsearch
           - kibana
           - logstash
+          - awscli
         state: present
         update_cache: yes
+
+    - name: Install certbot
+      apt:
+        name:
+          - certbot
+          - python3-certbot-dns-route53
+        state: present
+        update_cache: yes
+      when: env != "vagrant"
 
     - name: Set default host for elasticsearch
       lineinfile:
@@ -59,8 +67,6 @@
       copy:
         src: ./logstash.conf
         dest: /etc/logstash/conf.d/logstash.conf
-
-#TODO: add AWS and Certbot setup for production
 
     - name: Copy htpasswd file
       copy:
@@ -78,6 +84,30 @@
       copy:
         src: ./nginx/elk.feature-testing.link.conf
         dest: /etc/nginx/conf.d/
+      when: env != "vagrant"
+
+    - name: Ensure .aws directory under user home for awscli config
+      file:
+        path: "/home/{{ item.username }}/.aws"
+        state: directory
+        owner: "{{ item.username }}"
+        group: "{{ item.username }}"
+        mode: 0755
+      when: item.get('state', 'present') == 'present'
+      with_items: "{{ awscli_users }}"
+
+    - name: Copy awscli config to remote server
+      template:
+        src: awscli_config.j2
+        dest: "/home/{{ item.username }}/.aws/config"
+        owner: "{{ item.username }}"
+        group: "{{ item.username }}"
+        mode: 0644
+      when: item.get('state', 'present') == 'present'
+      with_items: "{{ awscli_users }}"
+
+    - name: Start certbot
+      shell: certbot certonly --dns-route53 --noninteractive --text --expand --agree-tos --email {{ email }} -d {{ domain }}
       when: env != "vagrant"
 
     - name: Start services, if not started
