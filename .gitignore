@@ -4,3 +4,4 @@
 other
 creds.txt
 /nginx/htpasswd.users
+.env
