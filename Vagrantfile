@@ -6,7 +6,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.define "server" do |machine|
     config.vm.provider "virtualbox" do |v|
-      v.memory = 4048
+      v.memory = 6048
       v.cpus = 4
     end
     machine.vm.box = 'ubuntu/bionic64'
@@ -14,13 +14,10 @@ Vagrant.configure("2") do |config|
       ansible.playbook = ENV["PLAYBOOK_NAME"]
       ansible.verbose = 'vv'
       ansible.extra_vars = {
-        env_setup: ENV["ENVIRONMENT"]
-    #    gitlab_user: ENV["REGISTRY_USER"],
-    #    gitlab_token: ENV["REGISTRY_TOKEN"],
-    #    postgres_user: ENV["POSTGRES_USER"],
-    #    postgres_db: ENV["POSTGRES_DB"],
-    #    backup_name: ENV["BACKUP_NAME"],
-    #    current_env: ENV["CURRENT_ENV"]
+        env_setup:             ENV["ENVIRONMENT"],
+        aws_access_key:        ENV["AWS_ACCESS_KEY"],
+        aws_secret_access_key: ENV["AWS_SECRET_ACCESS_KEY"],
+        server_user:           "vagrant"
       }
     end
   end
